@@ -1,125 +1,87 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Container, Form, Button, Card, Alert, Row, Col } from "react-bootstrap";
+import React, { useState } from "react";
+import { API } from "../js/BackendURL";
+import { useNavigate } from "react-router-dom";
 
-function Login() {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+export default function Login() {
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    const navigate = useNavigate();
 
-    // Validaciones front-end
-    if (!email.includes("@")) {
-      setError("Por favor ingresa un correo electrónico válido");
-      setLoading(false);
-      return;
-    }
+    const [form, setForm] = useState({
+        correo: "",
+        contraseña: ""
+    });
 
-    if (password.trim() === "") {
-      setError("La contraseña no puede estar vacía");
-      setLoading(false);
-      return;
-    }
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
 
-    try {
-      const res = await fetch(`${process.env.BACKEND_URL || 'http://localhost:3000'}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo: email, password })
-      });
+    const iniciarSesion = async (e) => {
+        e.preventDefault();
 
-      const data = await res.json();
+        try {
+            const res = await fetch(`${API}/api/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            });
 
-      if (!res.ok) {
-        setError(data.msg || "Credenciales incorrectas");
-        setLoading(false);
-        return;
-      }
+            const data = await res.json();
 
-      // Guardar token y datos del usuario
-      localStorage.setItem("token", data.token || "");
-      localStorage.setItem("user", JSON.stringify(data.user || {}));
+            if (!res.ok) {
+                alert(data.message || "Error al iniciar sesión");
+                return;
+            }
 
-      // Redirigir según rol
-      if (data.user?.rol === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
-    } catch (err) {
-      setError("Error de conexión con el servidor");
-      setLoading(false);
-    }
-  };
+            alert("Bienvenido " + data.usuario.nombre);
 
-  return (
-    <Container className="mt-5">
-      <Row className="justify-content-center">
-        <Col md={6} lg={4}>
-          <Card className="shadow">
-            <Card.Body>
-              <div className="text-center mb-4">
-                <h2>Iniciar Sesión</h2>
-                <p className="text-muted">Ingresa tus credenciales para continuar</p>
-              </div>
+            // Guardar en localStorage si necesitas sesión
+            localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
-              {error && <Alert variant="danger">{error}</Alert>}
+            navigate("/dashboard");
 
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3" controlId="formBasicEmail">
-                  <Form.Label>Correo Electrónico</Form.Label>
-                  <Form.Control
+        } catch (error) {
+            console.error(error);
+            alert("Error de conexión con el servidor");
+        }
+    };
+
+    return (
+        <div className="container mt-5">
+            <h2 className="fw-bold text-primary mb-4">Iniciar sesión</h2>
+
+            <form onSubmit={iniciarSesion} className="card p-4 shadow">
+
+                <label className="fw-bold">Correo</label>
+                <input
                     type="email"
-                    placeholder="Ingresa tu correo"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    name="correo"
+                    className="form-control mb-3"
+                    value={form.correo}
+                    onChange={handleChange}
                     required
-                  />
-                </Form.Group>
+                />
 
-                <Form.Group className="mb-4" controlId="formBasicPassword">
-                  <Form.Label>Contraseña</Form.Label>
-                  <Form.Control
+                <label className="fw-bold">Contraseña</label>
+                <input
                     type="password"
-                    placeholder="Contraseña"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    name="contraseña"
+                    className="form-control mb-3"
+                    value={form.contraseña}
+                    onChange={handleChange}
                     required
-                  />
-                </Form.Group>
+                />
 
-                <div className="d-grid mb-3">
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    disabled={loading}
-                  >
-                    {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                  </Button>
-                </div>
+                <button className="btn btn-primary w-100">Ingresar</button>
 
-                <div className="text-center">
-                  <Link to="/registro" className="text-decoration-none">
-                    ¿No tienes una cuenta? Regístrate
-                  </Link>
-                  <br />
-                  <Link to="/olvide-password" className="text-decoration-none">
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  );
+                <button
+                    type="button"
+                    className="btn btn-secondary w-100 mt-2"
+                    onClick={() => navigate("/")}
+                >
+                    Cancelar
+                </button>
+
+            </form>
+        </div>
+    );
 }
-
-export default Login;

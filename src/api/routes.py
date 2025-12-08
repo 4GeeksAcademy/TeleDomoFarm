@@ -3,40 +3,40 @@ from api.models import db, User
 from api.utils import APIException
 from flask import Blueprint
 from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
+
 
 api = Blueprint('api', __name__)
 
 # -------------------------------
-# LOGIN
+#  LOGIN USUARIO
 # -------------------------------
+
 @api.route('/login', methods=['POST'])
 def login():
     data = request.json
-    
-    email = data.get("email")
-    password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"error": "Email y contraseña son obligatorios"}), 400
+    correo = data.get("correo")
+    contraseña = data.get("contraseña")
 
-    # Buscar usuario por email
-    user = User.query.filter_by(email=email).first()
+    if not correo or not contraseña:
+        return jsonify({"message": "Correo y contraseña son obligatorios"}), 400
+
+    user = User.query.filter_by(correo=correo).first()
 
     if not user:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify({"message": "El correo no existe"}), 401
 
-    # Validar contraseña
-    if not check_password_hash(user.password, password):
-        return jsonify({"error": "Contraseña incorrecta"}), 401
+    # COMPARACIÓN CORRECTA
+    print("Contraseña del usuario DB:", user.contraseña)
+    print("Contraseña recibida:", contraseña),
 
-    # Si todo está bien, devolver datos del usuario
+    if not check_password_hash(user.contraseña, contraseña):
+        return jsonify({"message": "Contraseña incorrecta"}), 401
+
     return jsonify({
         "message": "Login exitoso",
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "rol": user.rol
-        }
+        "usuario": user.serialize()
     }), 200
 
 # -------------------------------
