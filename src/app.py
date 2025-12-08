@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
+from flask import Flask, jsonify, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
@@ -13,51 +13,17 @@ from api.commands import setup_commands
 from flask_cors import CORS
 from api.routes_login import login_bp
 
-login_bp = Blueprint('login_bp', __name__)
-app.register_blueprint(login_bp, url_prefix="/api")
-
-SECRET = os.getenv("JWT_SECRET", "supersecret")
-
-@login_bp.route('/login', methods=['POST'])
-def login():
-    data = request.json
-
-    email = data.get("email")
-    password = data.get("password")
-
-    if not email or not password:
-        return jsonify({"message": "Email y contraseña son obligatorios"}), 400
-
-    user = User.query.filter_by(correo=email).first()
-
-    if not user:
-        return jsonify({"message": "Correo o contraseña incorrectos"}), 400
-
-    if not check_password_hash(user.contraseña, password):
-        return jsonify({"message": "Correo o contraseña incorrectos"}), 400
-
-    # generar token
-    token = jwt.encode({
-        "id": user.id,
-        "rol": user.rol,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=3)
-    }, SECRET, algorithm="HS256")
-
-    return jsonify({
-        "token": token,
-        "role": user.rol
-    }), 200
-
-# from models import Person
-
+# Environment and static folder
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
+
+# Create app
 app = Flask(__name__)
 CORS(app)
 app.url_map.strict_slashes = False
 
-# database condiguration
+# database configuration
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
@@ -72,22 +38,19 @@ db.init_app(app)
 # add the admin
 setup_admin(app)
 
-# add the admin
+# add custom commands
 setup_commands(app)
 
-# Add all endpoints form the API with a "api" prefix
+# Register blueprints
 app.register_blueprint(api, url_prefix='/api')
+app.register_blueprint(login_bp, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object
-
-
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
 # generate sitemap with all your endpoints
-
-
 @app.route('/')
 def sitemap():
     if ENV == "development":

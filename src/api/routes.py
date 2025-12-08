@@ -3,48 +3,42 @@ from api.models import db, User
 from api.utils import APIException
 from flask import Blueprint
 from werkzeug.security import generate_password_hash
-from werkzeug.security import check_password_hash
-import datetime
-import jwt
 
 api = Blueprint('api', __name__)
 
-SECRET_KEY = os.getenv("JWT_SECRET", "default_secret_key")
 
 # -------------------------------
-#  LOGIN
+# LOGIN
 # -------------------------------
-@api.route('/login', methods=['POST'])   
+@api.route('/login', methods=['POST'])
 def login():
     data = request.json
-
+    
     email = data.get("email")
     password = data.get("password")
 
     if not email or not password:
-        return jsonify({"message": "Correo y contraseña son obligatorios"}), 400
+        return jsonify({"error": "Email y contraseña son obligatorios"}), 400
 
-    user = User.query.filter_by(correo=email).first()
+    # Buscar usuario por email
+    user = User.query.filter_by(email=email).first()
 
     if not user:
-        return jsonify({"message": "Correo o contraseña incorrectos"}), 400
+        return jsonify({"error": "Usuario no encontrado"}), 404
 
-    if not check_password_hash(user.contraseña, password):
-        return jsonify({"message": "Correo o contraseña incorrectos"}), 400
+    # Validar contraseña
+    if not check_password_hash(user.password, password):
+        return jsonify({"error": "Contraseña incorrecta"}), 401
 
-    # Crear token JWT
-    token = jwt.encode({
-        "id": user.id,
-        "rol": user.rol,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=12)
-    }, SECRET_KEY, algorithm="HS256")
-
+    # Si todo está bien, devolver datos del usuario
     return jsonify({
         "message": "Login exitoso",
-        "token": token,
-        "rol": user.rol
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "rol": user.rol
+        }
     }), 200
-
 
 # -------------------------------
 #  CREATE USER
@@ -122,7 +116,8 @@ def update_user(user_id):
     user.rol = data.get("rol", user.rol)
 
     if "contraseña" in data:
-        user.contraseña = generate_password_hash(data["contraseña"])
+        from werkzeug.security import generate_password_hash as gph
+        user.contraseña = gph(data["contraseña"])
 
     db.session.commit()
 
