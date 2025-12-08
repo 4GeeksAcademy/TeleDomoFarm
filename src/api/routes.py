@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash
 
 api = Blueprint('api', __name__)
 
-
 # -------------------------------
 # LOGIN
 # -------------------------------
