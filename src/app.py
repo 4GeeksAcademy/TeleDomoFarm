@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 # =====================
 # Extensiones
 # =====================
-db = SQLAlchemy()
+# Importar db desde database.py para evitar circularidad
+from src.api.database import db
 migrate = Migrate()
 jwt = JWTManager()
 login_manager = LoginManager()
@@ -58,7 +59,7 @@ def create_app():
     # =====================
     # IMPORTAR MODELOS (CLAVE PARA ALEMBIC)
     # =====================
-    from src.api.models import User, Field, Equipment, Inventory
+    from src.api.models import User, Field, Equipment, Inventory, Staff
 
     # =====================
     # CORS

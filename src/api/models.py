@@ -2,7 +2,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Integer, String, Text, Date, DateTime
-from src.app import db   # 👈 ESTE ES EL CAMBIO MÁS IMPORTANTE
+from src.api.database import db
 
 
 # ======================
@@ -62,6 +62,11 @@ class Field(db.Model):
     )
     inventory_list = db.relationship(
         'Inventory',
+        back_populates='field',
+        cascade='all, delete-orphan'
+    )
+    staff_list = db.relationship(
+        'Staff',
         back_populates='field',
         cascade='all, delete-orphan'
     )
@@ -159,5 +164,45 @@ class Equipment(db.Model):
         "created_at": self.created_at.isoformat(),
         "updated_at": self.updated_at.isoformat()
     }
+
+# ======================
+# STAFF
+# ======================
+class Staff(db.Model):
+    __tablename__ = 'staff'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    phone = db.Column(db.String(20))
+    position = db.Column(db.String(50), nullable=False)
+    hire_date = db.Column(db.Date, default=datetime.utcnow)
+    salary = db.Column(db.Float)
+    status = db.Column(db.String(20), default='Activo')
+    notes = db.Column(db.Text)
+    
+    # Relación con Field
+    field_id = db.Column(db.Integer, db.ForeignKey('field.id'))
+    field = db.relationship('Field', back_populates='staff_list')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "phone": self.phone,
+            "position": self.position,
+            "hire_date": self.hire_date.isoformat() if self.hire_date else None,
+            "salary": self.salary,
+            "status": self.status,
+            "notes": self.notes,
+            "field_id": self.field_id,
+            "field_name": self.field.name if self.field else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat()
+        }
 
 

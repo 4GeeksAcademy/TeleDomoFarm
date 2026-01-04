@@ -1,5 +1,6 @@
 from flask import request, jsonify, Blueprint
-from src.api.models import db, User
+from src.api.database import db
+from src.api.models import User
 from flask_jwt_extended import (
     jwt_required,
     get_jwt_identity,
@@ -8,8 +9,7 @@ from flask_jwt_extended import (
 from werkzeug.exceptions import Unauthorized
 from datetime import datetime
 import re
-from src.api.models import Field
-from src.api.models import db, User, Field, Inventory, Equipment
+from src.api.models import Field, Inventory, Equipment, Staff
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
 
@@ -433,3 +433,118 @@ def delete_equipment(equipment_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": "Error al eliminar el equipo", "error": str(e)}), 500
+
+# ============================
+# 🧑‍🌾 STAFF ENDPOINTS
+# ============================
+
+@api.route('/staff', methods=['GET'])
+@jwt_required()
+def get_staff():
+    """Obtener todo el personal"""
+    try:
+        staff_list = Staff.query.all()
+        return jsonify([staff.serialize() for staff in staff_list]), 200
+    except Exception as e:
+        return jsonify({"msg": "Error al obtener el personal", "error": str(e)}), 500
+
+@api.route('/staff', methods=['POST'])
+@jwt_required()
+def create_staff():
+    """Crear nuevo personal"""
+    try:
+        data = request.get_json()
+        
+        # Validar campos requeridos
+        required_fields = ['name', 'email', 'position']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"msg": f"El campo {field} es requerido"}), 400
+        
+        # Verificar si el email ya existe
+        existing_staff = Staff.query.filter_by(email=data['email']).first()
+        if existing_staff:
+            return jsonify({"msg": "Ya existe un personal con ese email"}), 400
+        
+        # Verificar que el field exista si se proporciona
+        if 'field_id' in data and data['field_id']:
+            field = Field.query.get(data['field_id'])
+            if not field:
+                return jsonify({"msg": "La finca especificada no existe"}), 400
+        
+        # Crear nuevo staff
+        staff = Staff(
+            name=data['name'],
+            email=data['email'],
+            phone=data.get('phone', ''),
+            position=data['position'],
+            salary=data.get('salary'),
+            status=data.get('status', 'Activo'),
+            notes=data.get('notes', ''),
+            field_id=data.get('field_id')
+        )
+        
+        # Procesar hire_date si se proporciona
+        if 'hire_date' in data and data['hire_date']:
+            staff.hire_date = datetime.strptime(data['hire_date'], '%Y-%m-%d').date()
+        
+        db.session.add(staff)
+        db.session.commit()
+        
+        return jsonify(staff.serialize()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al crear el personal", "error": str(e)}), 500
+
+@api.route('/staff/<int:staff_id>', methods=['PUT'])
+@jwt_required()
+def update_staff(staff_id):
+    """Actualizar personal"""
+    try:
+        staff = Staff.query.get(staff_id)
+        if not staff:
+            return jsonify({"msg": "Personal no encontrado"}), 404
+        
+        data = request.get_json()
+        
+        # Verificar que el field exista si se proporciona
+        if 'field_id' in data and data['field_id']:
+            field = Field.query.get(data['field_id'])
+            if not field:
+                return jsonify({"msg": "La finca especificada no existe"}), 400
+        
+        # Actualizar campos
+        staff.name = data.get('name', staff.name)
+        staff.email = data.get('email', staff.email)
+        staff.phone = data.get('phone', staff.phone)
+        staff.position = data.get('position', staff.position)
+        staff.salary = data.get('salary', staff.salary)
+        staff.status = data.get('status', staff.status)
+        staff.notes = data.get('notes', staff.notes)
+        staff.field_id = data.get('field_id', staff.field_id)
+        
+        # Procesar hire_date si se proporciona
+        if 'hire_date' in data and data['hire_date']:
+            staff.hire_date = datetime.strptime(data['hire_date'], '%Y-%m-%d').date()
+        
+        db.session.commit()
+        return jsonify(staff.serialize()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al actualizar el personal", "error": str(e)}), 500
+
+@api.route('/staff/<int:staff_id>', methods=['DELETE'])
+@jwt_required()
+def delete_staff(staff_id):
+    """Eliminar personal"""
+    try:
+        staff = Staff.query.get(staff_id)
+        if not staff:
+            return jsonify({"msg": "Personal no encontrado"}), 404
+        
+        db.session.delete(staff)
+        db.session.commit()
+        return jsonify({"msg": "Personal eliminado correctamente"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error al eliminar el personal", "error": str(e)}), 500
