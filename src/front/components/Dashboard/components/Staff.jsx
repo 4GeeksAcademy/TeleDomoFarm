@@ -143,7 +143,9 @@ const Staff = () => {
         ...formData,
         salary: formData.salary ? parseFloat(formData.salary) : null,
         field_id: formData.field_id ? parseInt(formData.field_id) : null,
-        hire_date: formData.hire_date ? formData.hire_date.toISOString().split('T')[0] : null
+        hire_date: formData.hire_date && typeof formData.hire_date === 'object'
+          ? formData.hire_date.toISOString().split('T')[0]
+          : formData.hire_date
       };
 
       const response = await fetch(url, {
@@ -155,12 +157,23 @@ const Staff = () => {
         body: JSON.stringify(payload)
       });
 
+      console.log('Staff - Response status:', response.status);
+      console.log('Staff - Response ok:', response.ok);
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Staff - Error response text:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { msg: errorText };
+        }
         throw new Error(errorData.msg || 'Error al guardar el personal');
       }
 
       const result = await response.json();
+      console.log('Staff - Result:', result);
       toast.success(editingStaff ? 'Personal actualizado' : 'Personal agregado');
       setShowModal(false);
       fetchStaff();

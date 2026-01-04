@@ -490,18 +490,23 @@ def create_staff():
     """Crear nuevo personal"""
     try:
         data = request.get_json()
+        print(f"DEBUG: Staff POST - Datos recibidos: {data}")
+        
         current_user = get_jwt_identity()
         current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        print(f"DEBUG: Staff POST - User ID: {current_user_id}")
         
         # Validar campos requeridos
         required_fields = ['name', 'email', 'position']
         for field in required_fields:
             if field not in data or not data[field]:
+                print(f"DEBUG: Staff POST - Campo faltante: {field}")
                 return jsonify({"msg": f"El campo {field} es requerido"}), 400
         
         # Verificar si el email ya existe para el usuario actual
         existing_staff = Staff.query.filter_by(email=data['email'], user_id=current_user_id).first()
         if existing_staff:
+            print(f"DEBUG: Staff POST - Email ya existe: {data['email']}")
             return jsonify({"msg": "Ya existe un personal con ese email"}), 400
         
         # Verificar que el field exista si se proporciona
