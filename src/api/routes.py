@@ -1,16 +1,9 @@
-from flask import request, jsonify, Blueprint
-from src.api.database import db
-from src.api.models import User
-from flask_jwt_extended import (
-    jwt_required,
-    get_jwt_identity,
-    verify_jwt_in_request
-)
+from flask import Flask, request, jsonify, Blueprint
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, create_access_token
 from werkzeug.exceptions import Unauthorized
 from datetime import datetime
-import re
-from src.api.models import Field, Inventory, Equipment, Staff
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import requests
+from .models import db, User, Field, Inventory, Equipment, Staff
 from werkzeug.security import check_password_hash
 
 
@@ -18,27 +11,40 @@ from werkzeug.security import check_password_hash
 api = Blueprint('api', __name__)
 
 # ============================
-# 🔐 Middleware JWT
+# Middleware JWT
 # ============================
 @api.before_request
 def check_jwt():
+    # Permitir rutas abiertas
     open_routes = (
         '/api/login',
-        '/api/register'
+        '/api/register',
+        '/api/weather',  # Permitir rutas de clima para pruebas
+        '/api/ping'  # Permitir ping para pruebas de conexión
     )
 
     for route in open_routes:
         if request.path.startswith(route):
             return
 
+    # Para rutas protegidas, verificar JWT
     try:
         verify_jwt_in_request()
-    except:
+    except Exception as e:
+        print(f"DEBUG: Error en JWT: {str(e)}")
         raise Unauthorized("Missing Authorization Header")
 
 # ============================
 # Rutas
 # ============================
+
+# Endpoint de prueba para verificar que el servidor está funcionando
+@api.route('/ping', methods=['GET'])
+def ping():
+    response = jsonify({"msg": "pong", "server": "running"})
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response, 200
 
 # Ruta para registrar un nuevo usuario (SIN TOKEN)
 @api.route('/register', methods=['POST'])
@@ -85,7 +91,10 @@ def register():
 # Ruta para iniciar sesión (SIN TOKEN)
 @api.route('/login', methods=['POST', 'OPTIONS'])
 def login():
+    print(f"DEBUG: Login endpoint llamado con método: {request.method}")
+    
     if request.method == 'OPTIONS':
+        print("DEBUG: Procesando OPTIONS request")
         response = jsonify({'message': 'Preflight check passed'})
         response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
@@ -94,19 +103,25 @@ def login():
         return response
 
     try:
+        print("DEBUG: Procesando POST request")
         data = request.get_json()
+        print(f"DEBUG: Datos recibidos: {data}")
         
         # Validar campos requeridos
         if not data or 'correo' not in data or 'contraseña' not in data:
+            print("DEBUG: Faltan campos requeridos")
             return jsonify({"msg": "Correo y contraseña son requeridos"}), 400
 
         # Buscar usuario
         user = User.query.filter_by(email=data['correo']).first()
+        print(f"DEBUG: Usuario encontrado: {user is not None}")
         
         # Verificar usuario y contraseña
         if not user or not user.check_password(data['contraseña']):
+            print("DEBUG: Credenciales incorrectas")
             return jsonify({"msg": "Correo o contraseña incorrectos"}), 401
         
+        print("DEBUG: Credenciales correctas, generando token")
         # Generar token JWT
         access_token = create_access_token(identity={
             'id': user.id,
@@ -128,9 +143,11 @@ def login():
         # Configurar headers CORS
         response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
+        print("DEBUG: Respuesta de login enviada")
         return response, 200
 
     except Exception as e:
+        print(f"DEBUG: Error en login: {str(e)}")
         return jsonify({"msg": "Error al iniciar sesión", "error": str(e)}), 500
 
 
@@ -139,13 +156,14 @@ def login():
 @jwt_required()
 def get_users():
     try:
-        current_user_id = get_jwt_identity()
-        current_user = User.query.get(current_user_id)
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        current_user_obj = User.query.get(current_user_id)
 
-        if not current_user:
+        if not current_user_obj:
             return jsonify({"msg": "Usuario no encontrado"}), 404
 
-        if current_user.rol != 'admin':
+        if current_user_obj.role != 'admin':
             return jsonify({"msg": "No autorizado"}), 403
 
         users = User.query.all()
@@ -188,6 +206,10 @@ def create_field():
             name=data['name'],
             crop=data['crop'],
             area=float(data['area']),
+            location=data.get('location'),
+            city=data.get('city'),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
             status=data.get('status', 'Activo'),
             next_action=data.get('next_action'),
             user_id=current_user_id
@@ -241,7 +263,9 @@ def delete_field(field_id):
 @jwt_required()
 def get_inventory():
     try:
-        inventory_items = Inventory.query.all()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        inventory_items = Inventory.query.filter_by(user_id=current_user_id).all()
         return jsonify({
             "msg": "Inventario obtenido exitosamente",
             "inventory": [item.serialize() for item in inventory_items]
@@ -334,7 +358,9 @@ def delete_inventory_item(item_id):
 @jwt_required()
 def get_equipment():
     try:
-        equipment = Equipment.query.options(db.joinedload(Equipment.field)).all()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        equipment = Equipment.query.filter_by(user_id=current_user_id).options(db.joinedload(Equipment.field)).all()
         return jsonify([{
             **eq.serialize(),
             'field': eq.field.serialize() if eq.field else None
@@ -561,3 +587,114 @@ def delete_staff(staff_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": "Error al eliminar el personal", "error": str(e)}), 500
+
+# ============================
+# CLIMA API
+# ============================
+@api.route('/weather/<city>', methods=['GET'])
+@jwt_required()
+def get_weather(city):
+    """Obtener el clima actual de una ciudad usando Open-Meteo API"""
+    try:
+        # Primero intentamos obtener coordenadas de la ciudad
+        geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=es&format=json"
+        geo_response = requests.get(geocoding_url)
+        
+        if geo_response.status_code != 200:
+            return jsonify({"msg": "Error al obtener coordenadas de la ciudad"}), 400
+            
+        geo_data = geo_response.json()
+        if not geo_data.get('results'):
+            return jsonify({"msg": "Ciudad no encontrada"}), 404
+            
+        # Extraer coordenadas
+        lat = geo_data['results'][0]['latitude']
+        lon = geo_data['results'][0]['longitude']
+        city_name = geo_data['results'][0]['name']
+        country = geo_data['results'][0]['country']
+        
+        # Obtener clima actual
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto"
+        weather_response = requests.get(weather_url)
+        
+        if weather_response.status_code != 200:
+            return jsonify({"msg": "Error al obtener datos del clima"}), 400
+            
+        weather_data = weather_response.json()
+        
+        # Procesar datos del clima
+        current = weather_data.get('current_weather', {})
+        daily = weather_data.get('daily', {})
+        
+        weather_info = {
+            "city": city_name,
+            "country": country,
+            "latitude": lat,
+            "longitude": lon,
+            "current": {
+                "temperature": current.get('temperature'),
+                "windspeed": current.get('windspeed'),
+                "winddirection": current.get('winddirection'),
+                "is_day": current.get('is_day'),
+                "weather_code": current.get('weathercode'),
+                "time": current.get('time')
+            },
+            "daily": {
+                "max_temp": daily.get('temperature_2m_max', [])[0] if daily.get('temperature_2m_max') else None,
+                "min_temp": daily.get('temperature_2m_min', [])[0] if daily.get('temperature_2m_min') else None,
+                "precipitation": daily.get('precipitation_sum', [])[0] if daily.get('precipitation_sum') else None
+            }
+        }
+        
+        return jsonify(weather_info), 200
+        
+    except Exception as e:
+        return jsonify({"msg": "Error al obtener el clima", "error": str(e)}), 500
+
+@api.route('/weather/coordinates', methods=['POST'])
+@jwt_required()
+def get_weather_by_coordinates():
+    """Obtener el clima actual usando coordenadas específicas"""
+    try:
+        data = request.get_json()
+        lat = data.get('latitude')
+        lon = data.get('longitude')
+        
+        if not lat or not lon:
+            return jsonify({"msg": "Latitud y longitud son requeridas"}), 400
+            
+        # Obtener clima actual
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto"
+        weather_response = requests.get(weather_url)
+        
+        if weather_response.status_code != 200:
+            return jsonify({"msg": "Error al obtener datos del clima"}), 400
+            
+        weather_data = weather_response.json()
+        
+        # Procesar datos del clima
+        current = weather_data.get('current_weather', {})
+        daily = weather_data.get('daily', {})
+        
+        weather_info = {
+            "latitude": lat,
+            "longitude": lon,
+            "current": {
+                "temperature": current.get('temperature'),
+                "windspeed": current.get('windspeed'),
+                "winddirection": current.get('winddirection'),
+                "is_day": current.get('is_day'),
+                "weather_code": current.get('weathercode'),
+                "time": current.get('time')
+            },
+            "daily": {
+                "max_temp": daily.get('temperature_2m_max', [])[0] if daily.get('temperature_2m_max') else None,
+                "min_temp": daily.get('temperature_2m_min', [])[0] if daily.get('temperature_2m_min') else None,
+                "precipitation": daily.get('precipitation_sum', [])[0] if daily.get('precipitation_sum') else None
+            }
+        }
+        
+        return jsonify(weather_info), 200
+        
+    except Exception as e:
+        return jsonify({"msg": "Error al obtener el clima", "error": str(e)}), 500

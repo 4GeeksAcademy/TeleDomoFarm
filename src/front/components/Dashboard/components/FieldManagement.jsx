@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button, Modal, Form, Row, Col } from 'react-bootstrap';
 import { GiWheat } from 'react-icons/gi';
 import { toast } from 'react-toastify';
+import WeatherWidget from './WeatherWidget';
+import LocationPicker from './LocationPicker';
 import 'react-toastify/dist/ReactToastify.css';
 
 const API_URL = import.meta.env.VITE_BACKEND_URL?.replace(/\/$/, '') || 'http://localhost:3001';
@@ -16,12 +18,35 @@ const FieldManagement = () => {
     crop: '',
     area: '',
     status: 'Activo',
-    next_action: ''
+    next_action: '',
+    location: '',
+    city: '',
+    latitude: null,
+    longitude: null
   });
 
   useEffect(() => {
+    // Primero probar si el backend está corriendo
+    testBackendConnection();
     fetchFields();
   }, []);
+
+  const testBackendConnection = async () => {
+    try {
+      console.log('FieldManagement - Probando conexión con backend...');
+      const response = await fetch(`${API_URL}/api/ping`);
+      console.log('FieldManagement - Ping response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('FieldManagement - Backend está corriendo:', data);
+      } else {
+        console.error('FieldManagement - Backend no responde correctamente');
+      }
+    } catch (error) {
+      console.error('FieldManagement - Error de conexión con backend:', error);
+      console.error('FieldManagement - El backend no está corriendo o hay problema de red');
+    }
+  };
 
   const fetchFields = async () => {
     try {
@@ -29,19 +54,27 @@ const FieldManagement = () => {
       console.log('FieldManagement - Obteniendo campos...');
       console.log('FieldManagement - Token:', token ? 'existe' : 'no existe');
       console.log('FieldManagement - URL:', `${API_URL}/api/fields`);
+      console.log('FieldManagement - API_URL completo:', API_URL);
+
+      if (!token) {
+        console.error('FieldManagement - No hay token disponible');
+        throw new Error('No hay token de autenticación');
+      }
 
       const response = await fetch(`${API_URL}/api/fields`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       console.log('FieldManagement - Response status:', response.status);
+      console.log('FieldManagement - Response headers:', response.headers);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('FieldManagement - Error en respuesta:', errorText);
-        throw new Error('Error al cargar los campos');
+        throw new Error(`Error ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -56,10 +89,22 @@ const FieldManagement = () => {
       setFields(fieldsArray);
     } catch (error) {
       console.error('FieldManagement - Error al cargar campos:', error);
+      console.error('FieldManagement - Error completo:', error.message);
+      console.error('FieldManagement - Stack:', error.stack);
       toast.error(error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLocationSelect = (location) => {
+    setFormData(prev => ({
+      ...prev,
+      location: location.display_name || `${location.city}, ${location.country}`,
+      city: location.city,
+      latitude: location.latitude,
+      longitude: location.longitude
+    }));
   };
 
   const handleInputChange = (e) => {
@@ -117,7 +162,11 @@ const FieldManagement = () => {
       crop: field.crop,
       area: field.area,
       status: field.status,
-      next_action: field.next_action || ''
+      next_action: field.next_action || '',
+      location: field.location || '',
+      city: field.city || '',
+      latitude: field.latitude || null,
+      longitude: field.longitude || null
     });
     setShowModal(true);
   };
@@ -188,6 +237,7 @@ const FieldManagement = () => {
               <tr>
                 <th>ID</th>
                 <th>Nombre</th>
+                <th>Ubicación</th>
                 <th>Cultivo</th>
                 <th>Área (ha)</th>
                 <th>Estado</th>
@@ -201,6 +251,10 @@ const FieldManagement = () => {
                   <tr key={field.id}>
                     <td>{field.id}</td>
                     <td>{field.name}</td>
+                    <td>
+                      <small className="text-muted d-block">{field.location || field.city || 'Sin ubicación'}</small>
+                      {field.city && <small className="text-muted"> {field.city}</small>}
+                    </td>
                     <td>{field.crop}</td>
                     <td>{field.area}</td>
                     <td>
@@ -257,6 +311,34 @@ const FieldManagement = () => {
                 />
               </Form.Group>
             </Row>
+
+            {/* Selector de Ubicación */}
+            <Row className="mb-3">
+              <Col>
+                <LocationPicker
+                  onLocationSelect={handleLocationSelect}
+                  initialLocation={editingField ? {
+                    city: editingField.city,
+                    latitude: editingField.latitude,
+                    longitude: editingField.longitude
+                  } : null}
+                />
+              </Col>
+            </Row>
+
+            {/* Widget de Clima */}
+            {(formData.city || (formData.latitude && formData.longitude)) && (
+              <Row className="mb-3">
+                <Col>
+                  <WeatherWidget
+                    city={formData.city}
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                  />
+                </Col>
+              </Row>
+            )}
+
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formCrop">
                 <Form.Label>Cultivo</Form.Label>

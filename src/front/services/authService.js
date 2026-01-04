@@ -31,8 +31,26 @@ export const isAuthenticated = () => {
 // Iniciar sesión
 export const login = async (email, password) => {
   try {
-    console.log("URL de login:", buildUrl("api/login"));
-    const response = await fetch(buildUrl("api/login"), {
+    const url = buildUrl("api/login");
+    console.log("URL de login:", url);
+    console.log("Intentando conectar al backend...");
+
+    // Primero probar si el backend está corriendo
+    try {
+      const pingResponse = await fetch(buildUrl("api/ping"));
+      console.log("Ping response status:", pingResponse.status);
+      if (pingResponse.ok) {
+        const pingData = await pingResponse.json();
+        console.log("Backend está corriendo:", pingData);
+      }
+    } catch (pingError) {
+      console.error("Error al hacer ping al backend:", pingError);
+      throw new Error(
+        "No se pudo conectar con el servidor. Verifica que el backend esté en ejecución en el puerto 3001."
+      );
+    }
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -45,7 +63,10 @@ export const login = async (email, password) => {
       mode: "cors",
     });
 
+    console.log("Login response status:", response.status);
+
     const data = await response.json();
+    console.log("Login response data:", data);
 
     if (!response.ok) {
       throw new Error(data.msg || "Error al iniciar sesión");
@@ -53,6 +74,7 @@ export const login = async (email, password) => {
 
     if (data.access_token) {
       setAuthToken(data.access_token);
+      console.log("Token guardado en localStorage");
     }
 
     return data;

@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../services/authService.js";
 import { login } from '../../services/authService';
+import { useAuth } from '../../services/AuthContext';
 
 export default function Login() {
     const navigate = useNavigate();
+    const { login: authLogin } = useAuth();
     const [form, setForm] = useState({
         correo: "",
         contraseña: "",
@@ -22,11 +24,10 @@ export default function Login() {
         try {
             const result = await login(form.correo, form.contraseña);
             if (result) {
-                // Guardar el token en localStorage o en el estado global (dependiendo de tu gestión de estado)
-                localStorage.setItem("token", result.access_token);
+                // Usar el AuthContext para guardar los datos del usuario y el token
+                authLogin(result.user, result.access_token);
                 // Redirigir al dashboard o a la página principal
                 navigate("/app/dashboard");
-
             }
         } catch (err) {
             setError(err.message || "Error al iniciar sesión");
@@ -40,7 +41,7 @@ export default function Login() {
                     <div className="card shadow">
                         <div className="card-body p-5">
                             <h2 className="text-center mb-4">Iniciar sesión</h2>
-                            
+
                             {error && <div className="alert alert-danger">{error}</div>}
 
                             <form onSubmit={handleSubmit}>

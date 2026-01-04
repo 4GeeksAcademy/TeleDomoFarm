@@ -1,0 +1,103 @@
+/* Weather Widget Styles */
+.weather-widget {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.weather-widget .card-body {
+  padding: 1.5rem;
+}
+
+.weather-widget .weather-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.weather-widget .weather-stat {
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.weather-widget .weather-stat:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.weather-widget .weather-stat h4 {
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin: 0.5rem 0 0 0;
+}
+
+.weather-widget .weather-stat small {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* Location Picker Styles */
+.location-picker .suggestions {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+}
+
+.location-picker .suggestions div {
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.location-picker .suggestions div:hover {
+  background-color: #e9ecef;
+}
+
+.location-picker .suggestions div:last-child {
+  border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .weather-widget .weather-stat {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .weather-widget .weather-stat h4 {
+    font-size: 1.25rem;
+  }
+
+  .weather-widget .weather-icon {
+    font-size: 2rem;
+  }
+}
+
+/* Animation for weather icons */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.weather-widget .weather-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Loading states */
+.weather-widget .spinner-border {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.weather-widget .text-muted {
+  color: rgba(255, 255, 255, 0.7) !important;
+}

@@ -52,6 +52,9 @@ class Field(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(200))
+    city = db.Column(db.String(100))  # Ciudad para el clima
+    latitude = db.Column(db.Float)  # Latitud para el mapa y clima
+    longitude = db.Column(db.Float)  # Longitud para el mapa y clima
     size = db.Column(db.Float)
     crop = db.Column(db.String(100))
     area = db.Column(db.Float)
@@ -84,6 +87,9 @@ class Field(db.Model):
             "id": self.id,
             "name": self.name,
             "location": self.location,
+            "city": self.city,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
             "size": self.size,
             "crop": self.crop,
             "area": self.area,

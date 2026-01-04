@@ -33,6 +33,10 @@ const tabs = [
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { currentUser, logout } = useAuth();
+
+  // Debug: Ver qué datos tiene el usuario
+  console.log('Dashboard - currentUser:', currentUser);
 
   return (
     <Container fluid className="p-0 d-flex flex-column" style={{ height: '100vh' }}>
@@ -62,7 +66,9 @@ const Dashboard = () => {
                 title={
                   <div className="d-flex align-items-center">
                     <FaUserCog className="me-2" />
-                    <span>Usuario</span>
+                    <span>
+                      {currentUser ? currentUser.nombre || 'Sin Nombre' : 'Usuario'}
+                    </span>
                   </div>
                 }
                 id="basic-nav-dropdown"
@@ -80,9 +86,8 @@ const Dashboard = () => {
                 <NavDropdown.Divider />
                 <NavDropdown.Item
                   onClick={() => {
-                    // Aquí iría la lógica para cerrar sesión
-                    // Por ejemplo: logout();
-                    console.log('Cerrando sesión...');
+                    logout();
+                    window.location.href = '/login';
                   }}
                   className="text-danger"
                 >
