@@ -1,107 +1,104 @@
 import React, { useState } from "react";
-import { API } from "../js/BackendURL"; 
 import { useNavigate } from "react-router-dom";
+import { register } from "../../services/authService.js";
 
 export default function CrearUsuario() {
-
     const navigate = useNavigate();
-
     const [form, setForm] = useState({
         nombre: "",
         correo: "",
         contraseña: "",
         rol: "usuario"
     });
+    const [error, setError] = useState("");
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const crearUsuario = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
 
         try {
-            const res = await fetch(`${API}/api/users`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                alert(data.message || "Error al crear usuario");
-                return;
+            const result = await register(form);
+            if (result) {
+                alert("Usuario registrado exitosamente");
+                navigate("/login"); // Redirigir al login o al dashboard
             }
-
-            alert("Usuario creado correctamente");
-            navigate("/usuarios");
-
-        } catch (error) {
-            console.error(error);
-            alert("Error de conexión con el servidor");
+        } catch (err) {
+            setError(err.message || "Error al registrar el usuario");
         }
     };
 
     return (
         <div className="container mt-5">
-            <h2 className="fw-bold text-primary mb-4">Crear nuevo usuario</h2>
+            <h2 className="fw-bold text-primary mb-4">Credasdadar nuevo usuario</h2>
+            
+            {error && <div className="alert alert-danger">{error}</div>}
 
-            <form onSubmit={crearUsuario} className="card p-4 shadow">
+            <form onSubmit={handleSubmit} className="card p-4 shadow">
+                <div className="mb-3">
+                    <label className="form-label fw-bold">Nombre</label>
+                    <input
+                        type="text"
+                        name="nombre"
+                        className="form-control"
+                        value={form.nombre}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
 
-                <label className="fw-bold">Nombre</label>
-                <input
-                    type="text"
-                    name="nombre"
-                    className="form-control mb-3"
-                    value={form.nombre}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="mb-3">
+                    <label className="form-label fw-bold">Correo electrónico</label>
+                    <input
+                        type="email"
+                        name="correo"
+                        className="form-control"
+                        value={form.correo}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
 
-                <label className="fw-bold">Correo</label>
-                <input
-                    type="email"
-                    name="correo"
-                    className="form-control mb-3"
-                    value={form.correo}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="mb-3">
+                    <label className="form-label fw-bold">Contraseña</label>
+                    <input
+                        type="password"
+                        name="contraseña"
+                        className="form-control"
+                        value={form.contraseña}
+                        onChange={handleChange}
+                        required
+                        minLength="6"
+                    />
+                </div>
 
-                <label className="fw-bold">Contraseña</label>
-                <input
-                    type="password"
-                    name="contraseña"
-                    className="form-control mb-3"
-                    value={form.contraseña}
-                    onChange={handleChange}
-                    required
-                />
+                <div className="mb-3">
+                    <label className="form-label fw-bold">Rol</label>
+                    <select
+                        name="rol"
+                        className="form-select"
+                        value={form.rol}
+                        onChange={handleChange}
+                    >
+                        <option value="usuario">Usuario</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
 
-                <label className="fw-bold">Rol</label>
-                <select
-                    name="rol"
-                    className="form-select mb-3"
-                    value={form.rol}
-                    onChange={handleChange}
-                >
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
-
-                <button className="btn btn-success w-100">Crear usuario</button>
-
-                <button
-                    type="button"
-                    className="btn btn-secondary w-100 mt-2"
-                    onClick={() => navigate("/usuarios")}
-                >
-                    Cancelar
+                <button type="submit" className="btn btn-primary w-100">
+                    Registrarse
                 </button>
 
+                <div className="text-center mt-3">
+                    ¿Ya tienes una cuenta?{" "}
+                    <a href="/login" className="text-primary">
+                        Inicia sesión
+                    </a>
+                </div>
             </form>
-
         </div>
     );
 }

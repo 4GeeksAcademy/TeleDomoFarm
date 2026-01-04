@@ -1,74 +1,126 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
 import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
-from flask_migrate import Migrate
-from flask_swagger import swagger
-from api.utils import APIException, generate_sitemap
-from api.models import db
-from api.routes import api
-from api.admin import setup_admin
-from api.commands import setup_commands
+from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from datetime import timedelta
+from dotenv import load_dotenv
+import logging
+from flask_login import LoginManager
 
-# from models import Person
+# =====================
+# Cargar variables entorno
+# =====================
+load_dotenv()
 
-ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
-static_file_dir = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), '../dist/')
-app = Flask(__name__)
-CORS(app)
-app.url_map.strict_slashes = False
+# =====================
+# Logging
+# =====================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# database condiguration
-db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
-        "postgres://", "postgresql://")
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-MIGRATE = Migrate(app, db, compare_type=True)
-db.init_app(app)
-
-# add the admin
-setup_admin(app)
-
-# add the admin
-setup_commands(app)
-
-# Add all endpoints form the API with a "api" prefix
-app.register_blueprint(api, url_prefix='/api')
-
-# Handle/serialize errors like a JSON object
+# =====================
+# Extensiones
+# =====================
+db = SQLAlchemy()
+migrate = Migrate()
+jwt = JWTManager()
+login_manager = LoginManager()
 
 
-@app.errorhandler(APIException)
-def handle_invalid_usage(error):
-    return jsonify(error.to_dict()), error.status_code
+def create_app():
+    app = Flask(__name__)
 
-# generate sitemap with all your endpoints
+    # =====================
+    # Configuración
+    # =====================
+    app.config.update(
+        SECRET_KEY=os.getenv('FLASK_APP_KEY', 'dev-key'),
+        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-secret'),
+        JWT_ACCESS_TOKEN_EXPIRES=timedelta(days=1),
+        SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            'app.db'
+        ),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ECHO=True
+    )
+
+    # =====================
+    # Inicializar extensiones
+    # =====================
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    login_manager.init_app(app)
+
+    # =====================
+    # IMPORTAR MODELOS (CLAVE PARA ALEMBIC)
+    # =====================
+    from src.api.models import User, Field, Equipment, Inventory
+
+    # =====================
+    # CORS
+    # =====================
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
+
+    # =====================
+    # Blueprints
+    # =====================
+    from src.api.routes import api as api_blueprint
+    app.register_blueprint(api_blueprint, url_prefix='/api')
+
+    # =====================
+    # Admin
+    # =====================
+    from src.api.admin import setup_admin
+    setup_admin(app)
+
+    # =====================
+    # Rutas prueba
+    # =====================
+    @app.route('/api/test', methods=['GET'])
+    def test_connection():
+        return jsonify({"message": "Backend OK"}), 200
+
+    # =====================
+    # Errores
+    # =====================
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Recurso no encontrado"}), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return jsonify({"error": "Error interno"}), 500
+
+    return app
 
 
-@app.route('/')
-def sitemap():
-    if ENV == "development":
-        return generate_sitemap(app)
-    return send_from_directory(static_file_dir, 'index.html')
-
-# any other endpoint will try to serve it like a static file
-@app.route('/<path:path>', methods=['GET'])
-def serve_any_other_file(path):
-    if not os.path.isfile(os.path.join(static_file_dir, path)):
-        path = 'index.html'
-    response = send_from_directory(static_file_dir, path)
-    response.cache_control.max_age = 0  # avoid cache memory
-    return response
+# =====================
+# Crear app
+# =====================
+app = create_app()
 
 
-# this only runs if `$ python src/main.py` is executed
+# =====================
+# Flask-Login loader
+# =====================
+@login_manager.user_loader
+def load_user(user_id):
+    from src.api.models import User
+    return User.query.get(int(user_id))
+
+
 if __name__ == '__main__':
-    PORT = int(os.environ.get('PORT', 3001))
-    app.run(host='0.0.0.0', port=PORT, debug=True)
+    port = int(os.environ.get('PORT', 3001))
+    app.run(host='0.0.0.0', port=port, debug=True)

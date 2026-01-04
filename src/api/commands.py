@@ -32,3 +32,33 @@ def setup_commands(app):
     @app.cli.command("insert-test-data")
     def insert_test_data():
         pass
+
+    @app.cli.command("create-admin")
+    @click.argument("email")
+    @click.argument("password")
+    def create_admin(email, password):
+        """Crea un nuevo usuario administrador"""
+        try:
+            # Verificar si ya existe un usuario con ese correo
+            if User.query.filter_by(correo=email).first():
+                print(f"Error: Ya existe un usuario con el correo {email}")
+                return
+                
+            # Crear el usuario administrador
+            admin = User()
+            admin.nombre = "Administrador"
+            admin.correo = email
+            admin.contraseña = password  # El modelo se encargará de hashearla
+            admin.rol = "admin"
+            admin.is_active = True
+            
+            db.session.add(admin)
+            db.session.commit()
+            
+            print(f"Usuario administrador creado exitosamente!")
+            print(f"Email: {email}")
+            print("Rol: admin")
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al crear el usuario administrador: {str(e)}")

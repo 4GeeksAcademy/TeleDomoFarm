@@ -1,27 +1,43 @@
-import {
-    createBrowserRouter,
-    createRoutesFromElements,
-    Route,
-} from "react-router-dom";
-
+// src/front/routes.jsx
+import { createBrowserRouter, createRoutesFromElements, Route, Navigate } from "react-router-dom";
 import { Layout } from "./pages/Layout";
-import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
-import { Demo } from "./pages/Demo";
-import CrearUsuario from "./components/usuarios/CrearUsuario.jsx";
-import Usuarios from "./components/usuarios/Usuarios";
+import Login from "./components/auth/Login";
+import CrearUsuario from "./components/usuarios/CrearUsuario";
+import NotFound from "./pages/NotFound";
+import Dashboard from "./components/Dashboard/Dashboard";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import AppLayout from "./components/Navbar/AppLayout";
+import './index.css';
 
-export const router = createBrowserRouter(
-    createRoutesFromElements(
-        <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>}>
-
-            <Route index element={<Home />} />
-            <Route path="/single/:theId" element={<Single />} />
-            <Route path="/demo" element={<Demo />} />
-        
-            <Route path="usuarios/crear" element={<CrearUsuario />} />
-            <Route path="/usuarios" element={<Usuarios />} />
-
-        </Route>
-    )
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<Layout />} errorElement={<NotFound />}>
+      {/* Redirige la ruta raíz a /app/dashboard */}
+      <Route index element={<Navigate to="/app/dashboard" replace />} />
+      
+      {/* Rutas públicas */}
+      <Route path="login" element={<Login />} />
+      <Route path="register" element={<CrearUsuario />} />
+      
+      {/* Rutas protegidas con AppLayout */}
+      <Route 
+        path="app" 
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      >
+        {/* Redirige /app a /app/dashboard */}
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        {/* Agrega aquí más rutas protegidas */}
+      </Route>
+      
+      {/* Ruta para páginas no encontradas */}
+      <Route path="*" element={<NotFound />} />
+    </Route>
+  )
 );
+
+export default router;
