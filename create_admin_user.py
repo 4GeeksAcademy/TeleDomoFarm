@@ -14,7 +14,7 @@ def create_admin_user():
         # Verificar si ya existe un usuario administrador
         existing_admin = User.query.filter_by(email='admin@teledomofarm.com').first()
         if existing_admin:
-            print("✅ Ya existe un usuario administrador:")
+            print("Ya existe un usuario administrador:")
             print(f"   Email: {existing_admin.email}")
             print(f"   Nombre: {existing_admin.first_name} {existing_admin.last_name}")
             return existing_admin
@@ -33,16 +33,16 @@ def create_admin_user():
             db.session.add(admin)
             db.session.commit()
             
-            print("✅ Usuario administrador creado exitosamente!")
+            print("Usuario administrador creado exitosamente!")
             print("   Email: admin@teledomofarm.com")
             print("   Contraseña: admin123")
             print("   Rol: admin")
-            print("\n🔐 Usa estas credenciales para iniciar sesión en la aplicación")
+            print("\nUsa estas credenciales para iniciar sesión en la aplicación")
             return admin
             
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error al crear el usuario administrador: {str(e)}")
+            print(f"Error al crear el usuario administrador: {str(e)}")
             return None
 
 if __name__ == "__main__":

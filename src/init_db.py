@@ -17,12 +17,12 @@ def init_db():
             )
             db.session.add(admin)
             db.session.commit()
-            print("✅ Usuario administrador creado exitosamente!")
-            print(f"👤 Email: admin@tudominio.com")
-            print("🔑 Contraseña: tucontraseña")
+            print("Usuario administrador creado exitosamente!")
+            print(f"Email: admin@tudominio.com")
+            print("Contraseña: tucontraseña")
         else:
-            print("ℹ️  Ya existe un usuario administrador en la base de datos")
+            print("Ya existe un usuario administrador en la base de datos")
 
 if __name__ == "__main__":
-    print("🔧 Inicializando la base de datos...")
+    print("Inicializando la base de datos...")
     init_db()

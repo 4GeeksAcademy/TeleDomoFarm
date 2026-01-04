@@ -40,9 +40,9 @@ def reset_database():
             if os.path.exists(db_path):
                 try:
                     os.remove(db_path)
-                    print("✅ Base de datos eliminada exitosamente")
+                    print("Base de datos eliminada exitosamente")
                 except PermissionError as e:
-                    print(f"❌ No se pudo eliminar {db_path}")
+                    print(f" No se pudo eliminar {db_path}")
                     print("   Intenta estos pasos:")
                     print("   1. Cierra VS Code completamente")
                     print("   2. Abre el Administrador de tareas (Ctrl+Shift+Esc)")
@@ -51,17 +51,17 @@ def reset_database():
                     print(f"   5. Luego ejecuta: del \"{db_path}\"")
                     return
             else:
-                print("ℹ️  La base de datos no existe, se creará una nueva")
+                print("La base de datos no existe, se creara una nueva")
             
             # Crear todas las tablas
-            print("🔄 Creando tablas...")
+            print("Creando tablas...")
             db.create_all()
             
             # Verificar tablas creadas
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            print("📊 Tablas en la base de datos:", tables)
+            print("Tablas en la base de datos:", tables)
             
             # Crear usuario administrador
             admin = User(
@@ -74,11 +74,11 @@ def reset_database():
             admin.set_password('admin123')
             db.session.add(admin)
             db.session.commit()
-            print("✅ Usuario administrador creado exitosamente")
+            print("Usuario administrador creado exitosamente")
             
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error: {str(e)}")
+            print(f"Error: {str(e)}")
             import traceback
             traceback.print_exc()
 

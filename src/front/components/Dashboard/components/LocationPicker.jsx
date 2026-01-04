@@ -13,23 +13,40 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Lista de ciudades colombianas importantes para búsqueda rápida
-    const colombianCities = [
+    // Efecto para inicializar searchQuery cuando hay initialLocation
+    useEffect(() => {
+        if (initialLocation && initialLocation.city) {
+            setSearchQuery(initialLocation.city);
+            setLocation(initialLocation);
+        }
+    }, [initialLocation]);
+
+    // Lista de ciudades importantes para búsqueda rápida
+    const cities = [
+        // Colombia
         { city: 'Bogotá', display_name: 'Bogotá, Colombia' },
         { city: 'Medellín', display_name: 'Medellín, Colombia' },
         { city: 'Cali', display_name: 'Cali, Colombia' },
         { city: 'Barranquilla', display_name: 'Barranquilla, Colombia' },
         { city: 'Cartagena', display_name: 'Cartagena, Colombia' },
-        { city: 'Bucaramanga', display_name: 'Bucaramanga, Colombia' },
-        { city: 'Pereira', display_name: 'Pereira, Colombia' },
-        { city: 'Cúcuta', display_name: 'Cúcuta, Colombia' },
-        { city: 'Ibagué', display_name: 'Ibagué, Colombia' },
-        { city: 'Boyacá', display_name: 'Boyacá, Colombia' },
-        { city: 'Tunja', display_name: 'Tunja, Colombia' },
-        { city: 'Manizales', display_name: 'Manizales, Colombia' },
-        { city: 'Villavicencio', display_name: 'Villavicencio, Colombia' },
-        { city: 'Neiva', display_name: 'Neiva, Colombia' },
-        { city: 'Pasto', display_name: 'Pasto, Colombia' }
+        // Argentina
+        { city: 'Buenos Aires', display_name: 'Buenos Aires, Argentina' },
+        { city: 'Córdoba', display_name: 'Córdoba, Argentina' },
+        { city: 'Rosario', display_name: 'Rosario, Argentina' },
+        // México
+        { city: 'Ciudad de México', display_name: 'Ciudad de México, México' },
+        { city: 'Guadalajara', display_name: 'Guadalajara, México' },
+        { city: 'Monterrey', display_name: 'Monterrey, México' },
+        // España
+        { city: 'Madrid', display_name: 'Madrid, España' },
+        { city: 'Barcelona', display_name: 'Barcelona, España' },
+        { city: 'Valencia', display_name: 'Valencia, España' },
+        // Perú
+        { city: 'Lima', display_name: 'Lima, Perú' },
+        { city: 'Arequipa', display_name: 'Arequipa, Perú' },
+        // Chile
+        { city: 'Santiago', display_name: 'Santiago, Chile' },
+        { city: 'Valparaíso', display_name: 'Valparaíso, Chile' }
     ];
 
     // Buscar ciudades en nuestra lista
@@ -39,7 +56,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
             return;
         }
 
-        const filtered = colombianCities.filter(city =>
+        const filtered = cities.filter(city =>
             city.city.toLowerCase().includes(query.toLowerCase()) ||
             city.display_name.toLowerCase().includes(query.toLowerCase())
         );
@@ -105,7 +122,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
 
         // Si el usuario escribe una ciudad, actualizarla inmediatamente
         if (value.length > 2) {
-            const foundCity = colombianCities.find(city =>
+            const foundCity = cities.find(city =>
                 city.city.toLowerCase() === value.toLowerCase()
             );
 
@@ -121,6 +138,18 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
                     longitude: null
                 });
             }
+        } else if (value.length === 0) {
+            // Si el campo está vacío, limpiar la ubicación
+            setLocation({
+                city: '',
+                latitude: null,
+                longitude: null
+            });
+            onLocationSelect({
+                city: '',
+                latitude: null,
+                longitude: null
+            });
         }
     };
 
@@ -145,8 +174,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
                         <Form.Control
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Ej: Buenos Aires, Argentina"
+                            onChange={handleManualInput}
+                            placeholder="Ej: Bogotá, Colombia o Buenos Aires, Argentina"
                             className="pe-5"
                         />
                         <FaSearch className="position-absolute"
