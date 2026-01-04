@@ -163,15 +163,15 @@ def get_users():
 @jwt_required()
 def get_fields():
     try:
-        fields = Field.query.all()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        fields = Field.query.filter_by(user_id=current_user_id).all()
         return jsonify({
-            "fields": [field.serialize() for field in fields],
-            "total_fields": len(fields)
+            "fields": [field.serialize() for field in fields]
         }), 200
     except Exception as e:
         return jsonify({"msg": "Error al obtener los campos", "error": str(e)}), 500
 
-    
 @api.route('/fields', methods=['POST'])
 @jwt_required()
 def create_field():
@@ -182,12 +182,15 @@ def create_field():
         if not data.get(field):
             return jsonify({"msg": f"El campo {field} es requerido"}), 400
     try:
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
         new_field = Field(
             name=data['name'],
             crop=data['crop'],
             area=float(data['area']),
             status=data.get('status', 'Activo'),
-            next_action=data.get('next_action')
+            next_action=data.get('next_action'),
+            user_id=current_user_id
         )
         db.session.add(new_field)
         db.session.commit()
@@ -195,6 +198,7 @@ def create_field():
     except Exception as e:
         db.session.rollback()
         return jsonify({"msg": str(e)}), 500
+
 @api.route('/fields/<int:field_id>', methods=['PUT'])
 @jwt_required()
 def update_field(field_id):
@@ -251,6 +255,8 @@ def get_inventory():
 def add_inventory_item():
     try:
         data = request.get_json()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
         
         # Validar campos requeridos
         required_fields = ['name', 'category', 'quantity', 'unit']
@@ -266,7 +272,8 @@ def add_inventory_item():
             supplier=data.get('supplier'),
             min_quantity=float(data['min_quantity']) if data.get('min_quantity') else None,
             notes=data.get('notes'),
-            field_id=data.get('field_id')
+            field_id=data.get('field_id'),
+            user_id=current_user_id
         )
         
         db.session.add(new_item)
@@ -340,6 +347,8 @@ def get_equipment():
 def add_equipment():
     try:
         data = request.get_json()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
         
         # Convertir fechas si existen
         date_fields = ['purchase_date', 'last_maintenance', 'next_maintenance']
@@ -370,7 +379,8 @@ def add_equipment():
             last_maintenance=parse_date(data.get('last_maintenance')),
             next_maintenance=parse_date(data.get('next_maintenance')),
             notes=data.get('notes'),
-            field_id=data.get('field_id')
+            field_id=data.get('field_id'),
+            user_id=current_user_id
         )
         
         db.session.add(equipment)
@@ -382,7 +392,6 @@ def add_equipment():
         db.session.rollback()
         return jsonify({"msg": "Error al añadir el equipo", "error": str(e)}), 500
 
-#Endpoints para actualizar y eliminar
 @api.route('/equipment/<int:equipment_id>', methods=['PUT'])
 @jwt_required()
 def update_equipment(equipment_id):
@@ -421,12 +430,11 @@ def update_equipment(equipment_id):
 @jwt_required()
 def delete_equipment(equipment_id):
     """Eliminar equipo"""
-    equipment = Equipment.query.get(equipment_id)
-
-    if not equipment:
-        return jsonify({"msg": "Equipo no encontrado"}), 404
-
     try:
+        equipment = Equipment.query.get(equipment_id)
+        if not equipment:
+            return jsonify({"msg": "Equipo no encontrado"}), 404
+        
         db.session.delete(equipment)
         db.session.commit()
         return jsonify({"msg": "Equipo eliminado correctamente"}), 200
@@ -435,15 +443,17 @@ def delete_equipment(equipment_id):
         return jsonify({"msg": "Error al eliminar el equipo", "error": str(e)}), 500
 
 # ============================
-# 🧑‍🌾 STAFF ENDPOINTS
+# STAFF ENDPOINTS
 # ============================
 
 @api.route('/staff', methods=['GET'])
 @jwt_required()
 def get_staff():
-    """Obtener todo el personal"""
+    """Obtener todo el personal del usuario actual"""
     try:
-        staff_list = Staff.query.all()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
+        staff_list = Staff.query.filter_by(user_id=current_user_id).all()
         return jsonify([staff.serialize() for staff in staff_list]), 200
     except Exception as e:
         return jsonify({"msg": "Error al obtener el personal", "error": str(e)}), 500
@@ -454,6 +464,8 @@ def create_staff():
     """Crear nuevo personal"""
     try:
         data = request.get_json()
+        current_user = get_jwt_identity()
+        current_user_id = current_user['id'] if isinstance(current_user, dict) else current_user
         
         # Validar campos requeridos
         required_fields = ['name', 'email', 'position']
@@ -461,8 +473,8 @@ def create_staff():
             if field not in data or not data[field]:
                 return jsonify({"msg": f"El campo {field} es requerido"}), 400
         
-        # Verificar si el email ya existe
-        existing_staff = Staff.query.filter_by(email=data['email']).first()
+        # Verificar si el email ya existe para el usuario actual
+        existing_staff = Staff.query.filter_by(email=data['email'], user_id=current_user_id).first()
         if existing_staff:
             return jsonify({"msg": "Ya existe un personal con ese email"}), 400
         
@@ -481,7 +493,8 @@ def create_staff():
             salary=data.get('salary'),
             status=data.get('status', 'Activo'),
             notes=data.get('notes', ''),
-            field_id=data.get('field_id')
+            field_id=data.get('field_id'),
+            user_id=current_user_id
         )
         
         # Procesar hire_date si se proporciona

@@ -14,12 +14,17 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(250), nullable=False)
-    first_name = db.Column(db.String(80), nullable=False)
-    last_name = db.Column(db.String(80), default='')
-    is_active = db.Column(db.Boolean, default=True)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
     role = db.Column(db.String(20), default='user')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relaciones con los datos del usuario
+    fields = db.relationship('Field', back_populates='user', cascade='all, delete-orphan')
+    equipment = db.relationship('Equipment', back_populates='user', cascade='all, delete-orphan')
+    inventory = db.relationship('Inventory', back_populates='user', cascade='all, delete-orphan')
+    staff = db.relationship('Staff', back_populates='user', cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -54,6 +59,10 @@ class Field(db.Model):
     next_action = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Añade default
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relación con usuario
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', back_populates='fields')
 
     equipment_list = db.relationship(
         'Equipment',
@@ -103,6 +112,10 @@ class Inventory(db.Model):
 
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    
+    # Relación con usuario
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', back_populates='inventory')
 
     field = db.relationship('Field', back_populates='inventory_list')
 
@@ -143,6 +156,10 @@ class Equipment(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relación con usuario
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', back_populates='equipment')
 
     field = db.relationship('Field', back_populates='equipment_list')
 
@@ -184,6 +201,10 @@ class Staff(db.Model):
     # Relación con Field
     field_id = db.Column(db.Integer, db.ForeignKey('field.id'))
     field = db.relationship('Field', back_populates='staff_list')
+    
+    # Relación con usuario
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User', back_populates='staff')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
