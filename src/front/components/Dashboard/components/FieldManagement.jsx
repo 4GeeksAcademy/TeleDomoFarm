@@ -232,63 +232,83 @@ const FieldManagement = () => {
           </div>
         </Card.Header>
         <Card.Body>
-          <Table striped hover responsive>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Ubicación</th>
-                <th>Cultivo</th>
-                <th>Área (ha)</th>
-                <th>Estado</th>
-                <th>Próxima Acción</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.length > 0 ? (
-                fields.map((field) => (
-                  <tr key={field.id}>
-                    <td>{field.id}</td>
-                    <td>{field.name}</td>
-                    <td>
-                      <small className="text-muted d-block">{field.location || field.city || 'Sin ubicación'}</small>
-                      {field.city && <small className="text-muted"> {field.city}</small>}
-                    </td>
-                    <td>{field.crop}</td>
-                    <td>{field.area}</td>
-                    <td>
-                      <Badge bg={getStatusVariant(field.status)}>
-                        {field.status}
-                      </Badge>
-                    </td>
-                    <td>{field.next_action || 'Ninguna'}</td>
-                    <td>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="me-1"
-                        onClick={() => handleEdit(field)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDelete(field.id)}
-                      >
-                        Eliminar
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center">No hay campos registrados</td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
+          <Row className="g-4">
+            {fields.length > 0 ? (
+              fields.map((field) => (
+                <Col key={field.id} lg={6} xl={4}>
+                  <Card className="field-card h-100">
+                    {(field.city || (field.latitude && field.longitude)) && (
+                      <div className="field-weather-image">
+                        <WeatherWidget
+                          city={field.city}
+                          latitude={field.latitude}
+                          longitude={field.longitude}
+                          compact={true}
+                        />
+                      </div>
+                    )}
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <h6 className="mb-1">{field.name}</h6>
+                          <small className="text-muted">
+                            <GiWheat className="me-1" />
+                            {field.crop}
+                          </small>
+                        </div>
+                        <Badge bg={getStatusVariant(field.status)}>
+                          {field.status}
+                        </Badge>
+                      </div>
+
+                      <div className="field-details mb-3">
+                        <div className="detail-item">
+                          <strong>Área:</strong> {field.area} ha
+                        </div>
+                        <div className="detail-item">
+                          <strong>Ubicación:</strong> {field.location || field.city || 'Sin ubicación'}
+                        </div>
+                        {field.next_action && (
+                          <div className="detail-item">
+                            <strong>Próxima acción:</strong> {field.next_action}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleEdit(field)}
+                          className="flex-grow-1"
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDelete(field.id)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))
+            ) : (
+              <Col>
+                <div className="text-center py-5">
+                  <GiWheat size={64} className="text-muted mb-3" />
+                  <h5 className="text-muted">No hay campos registrados</h5>
+                  <p className="text-muted">Crea tu primer campo para comenzar</p>
+                  <Button variant="primary" onClick={() => setShowModal(true)}>
+                    <GiWheat className="me-1" /> Crear Campo
+                  </Button>
+                </div>
+              </Col>
+            )}
+          </Row>
         </Card.Body>
       </Card>
 
@@ -327,17 +347,33 @@ const FieldManagement = () => {
             </Row>
 
             {/* Widget de Clima */}
-            {(formData.city || (formData.latitude && formData.longitude)) && (
-              <Row className="mb-3">
-                <Col>
+            <Row className="mb-3">
+              <Col>
+                {(formData.city || (formData.latitude && formData.longitude)) ? (
                   <WeatherWidget
                     city={formData.city}
                     latitude={formData.latitude}
                     longitude={formData.longitude}
                   />
-                </Col>
-              </Row>
-            )}
+                ) : (
+                  <Card className="field-card">
+                    <Card.Body className="text-center py-4">
+                      <div className="text-muted">
+                        <h5 className="mb-3">
+                          <GiWheat size={48} className="opacity-50" />
+                        </h5>
+                        <p className="mb-2">Ingresa una ubicación para ver el clima</p>
+                        <small className="d-block">
+                          <strong>Opciones:</strong>
+                          <br />• Nombre de la ciudad (ej: Bogotá)
+                          <br />• O selecciona en el mapa
+                        </small>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                )}
+              </Col>
+            </Row>
 
             <Row className="mb-3">
               <Form.Group as={Col} controlId="formCrop">

@@ -13,36 +13,38 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Buscar ciudades usando Nominatim (OpenStreetMap)
-    const searchCities = async (query) => {
+    // Lista de ciudades colombianas importantes para búsqueda rápida
+    const colombianCities = [
+        { city: 'Bogotá', display_name: 'Bogotá, Colombia' },
+        { city: 'Medellín', display_name: 'Medellín, Colombia' },
+        { city: 'Cali', display_name: 'Cali, Colombia' },
+        { city: 'Barranquilla', display_name: 'Barranquilla, Colombia' },
+        { city: 'Cartagena', display_name: 'Cartagena, Colombia' },
+        { city: 'Bucaramanga', display_name: 'Bucaramanga, Colombia' },
+        { city: 'Pereira', display_name: 'Pereira, Colombia' },
+        { city: 'Cúcuta', display_name: 'Cúcuta, Colombia' },
+        { city: 'Ibagué', display_name: 'Ibagué, Colombia' },
+        { city: 'Boyacá', display_name: 'Boyacá, Colombia' },
+        { city: 'Tunja', display_name: 'Tunja, Colombia' },
+        { city: 'Manizales', display_name: 'Manizales, Colombia' },
+        { city: 'Villavicencio', display_name: 'Villavicencio, Colombia' },
+        { city: 'Neiva', display_name: 'Neiva, Colombia' },
+        { city: 'Pasto', display_name: 'Pasto, Colombia' }
+    ];
+
+    // Buscar ciudades en nuestra lista
+    const searchCities = (query) => {
         if (!query || query.length < 2) {
             setSuggestions([]);
             return;
         }
 
-        setLoading(true);
-        setError(null);
+        const filtered = colombianCities.filter(city =>
+            city.city.toLowerCase().includes(query.toLowerCase()) ||
+            city.display_name.toLowerCase().includes(query.toLowerCase())
+        );
 
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=es`
-            );
-            const data = await response.json();
-
-            const formattedSuggestions = data.map(item => ({
-                display_name: item.display_name,
-                city: item.name,
-                country: item.address?.country || '',
-                latitude: parseFloat(item.lat),
-                longitude: parseFloat(item.lon)
-            }));
-
-            setSuggestions(formattedSuggestions);
-        } catch (err) {
-            setError('Error al buscar ubicaciones');
-        } finally {
-            setLoading(false);
-        }
+        setSuggestions(filtered);
     };
 
     useEffect(() => {
@@ -56,12 +58,16 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
     const handleSuggestionClick = (suggestion) => {
         setLocation({
             city: suggestion.city,
-            latitude: suggestion.latitude,
-            longitude: suggestion.longitude
+            latitude: null,
+            longitude: null
         });
         setSearchQuery(suggestion.display_name);
         setSuggestions([]);
-        onLocationSelect(suggestion);
+        onLocationSelect({
+            city: suggestion.city,
+            latitude: null,
+            longitude: null
+        });
     };
 
     const handleGetCurrentLocation = () => {
@@ -72,36 +78,18 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
 
         setLoading(true);
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
+            (position) => {
                 const { latitude, longitude } = position.coords;
 
-                // Reverse geocoding para obtener el nombre de la ciudad
-                try {
-                    const response = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=es`
-                    );
-                    const data = await response.json();
+                const newLocation = {
+                    city: 'Ubicación actual',
+                    latitude,
+                    longitude
+                };
 
-                    const newLocation = {
-                        city: data.address?.city || data.address?.town || 'Ubicación actual',
-                        latitude,
-                        longitude
-                    };
-
-                    setLocation(newLocation);
-                    setSearchQuery(data.display_name || `${latitude}, ${longitude}`);
-                    onLocationSelect(newLocation);
-                } catch (err) {
-                    const newLocation = {
-                        city: 'Ubicación actual',
-                        latitude,
-                        longitude
-                    };
-                    setLocation(newLocation);
-                    setSearchQuery(`${latitude}, ${longitude}`);
-                    onLocationSelect(newLocation);
-                }
-
+                setLocation(newLocation);
+                setSearchQuery(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+                onLocationSelect(newLocation);
                 setLoading(false);
             },
             (error) => {
@@ -109,6 +97,31 @@ const LocationPicker = ({ onLocationSelect, initialLocation = null }) => {
                 setLoading(false);
             }
         );
+    };
+
+    const handleManualInput = (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+
+        // Si el usuario escribe una ciudad, actualizarla inmediatamente
+        if (value.length > 2) {
+            const foundCity = colombianCities.find(city =>
+                city.city.toLowerCase() === value.toLowerCase()
+            );
+
+            if (foundCity) {
+                setLocation({
+                    city: foundCity.city,
+                    latitude: null,
+                    longitude: null
+                });
+                onLocationSelect({
+                    city: foundCity.city,
+                    latitude: null,
+                    longitude: null
+                });
+            }
+        }
     };
 
     return (

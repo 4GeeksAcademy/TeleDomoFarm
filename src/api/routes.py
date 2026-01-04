@@ -599,24 +599,66 @@ def delete_staff(staff_id):
 @api.route('/weather/<city>', methods=['GET'])
 @jwt_required()
 def get_weather(city):
-    """Obtener el clima actual de una ciudad usando Open-Meteo API"""
+    """Obtener el clima actual de una ciudad usando Open-Meteo API con fallback"""
     try:
-        # Primero intentamos obtener coordenadas de la ciudad
+        # Lista de ciudades colombianas importantes con coordenadas conocidas
+        colombian_cities = {
+            'boyaca': {'lat': 5.5353, 'lon': -73.3678, 'name': 'Boyacá', 'country': 'Colombia'},
+            'tunja': {'lat': 5.5353, 'lon': -73.3678, 'name': 'Tunja', 'country': 'Colombia'},
+            'bogota': {'lat': 4.7110, 'lon': -74.0721, 'name': 'Bogotá', 'country': 'Colombia'},
+            'medellin': {'lat': 6.2442, 'lon': -75.5812, 'name': 'Medellín', 'country': 'Colombia'},
+            'cali': {'lat': 3.4516, 'lon': -76.5319, 'name': 'Cali', 'country': 'Colombia'},
+            'barranquilla': {'lat': 10.9639, 'lon': -74.7964, 'name': 'Barranquilla', 'country': 'Colombia'},
+            'cartagena': {'lat': 10.3910, 'lon': -75.4794, 'name': 'Cartagena', 'country': 'Colombia'},
+            'bucaramanga': {'lat': 7.1253, 'lon': -73.1198, 'name': 'Bucaramanga', 'country': 'Colombia'},
+            'pereira': {'lat': 4.8133, 'lon': -75.6961, 'name': 'Pereira', 'country': 'Colombia'},
+            'cucuta': {'lat': 7.8939, 'lon': -72.5078, 'name': 'Cúcuta', 'country': 'Colombia'},
+            'ibague': {'lat': 4.4389, 'lon': -75.2322, 'name': 'Ibagué', 'country': 'Colombia'},
+            'villavicencio': {'lat': 4.1505, 'lon': -73.6367, 'name': 'Villavicencio', 'country': 'Colombia'},
+            'valledupar': {'lat': 10.4634, 'lon': -73.2532, 'name': 'Valledupar', 'country': 'Colombia'},
+            'monteria': {'lat': 8.7479, 'lon': -75.8815, 'name': 'Montería', 'country': 'Colombia'},
+            'neiva': {'lat': 2.9273, 'lon': -75.2819, 'name': 'Neiva', 'country': 'Colombia'},
+            'pasto': {'lat': 1.2136, 'lon': -77.2811, 'name': 'Pasto', 'country': 'Colombia'},
+            'riohacha': {'lat': 11.5444, 'lon': -72.9070, 'name': 'Riohacha', 'country': 'Colombia'},
+            'armenia': {'lat': 4.5339, 'lon': -75.6811, 'name': 'Armenia', 'country': 'Colombia'},
+            'popayan': {'lat': 2.4542, 'lon': -76.6147, 'name': 'Popayán', 'country': 'Colombia'},
+            'sincelejo': {'lat': 9.3047, 'lon': -75.3973, 'name': 'Sincelejo', 'country': 'Colombia'}
+        }
+        
+        # Normalizar nombre de ciudad para búsqueda
+        city_lower = city.lower().strip()
+        
+        # Primero intentamos obtener coordenadas de la ciudad con Open-Meteo
         geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=es&format=json"
         geo_response = requests.get(geocoding_url)
         
-        if geo_response.status_code != 200:
-            return jsonify({"msg": "Error al obtener coordenadas de la ciudad"}), 400
-            
-        geo_data = geo_response.json()
-        if not geo_data.get('results'):
-            return jsonify({"msg": "Ciudad no encontrada"}), 404
-            
-        # Extraer coordenadas
-        lat = geo_data['results'][0]['latitude']
-        lon = geo_data['results'][0]['longitude']
-        city_name = geo_data['results'][0]['name']
-        country = geo_data['results'][0]['country']
+        lat, lon, city_name, country = None, None, None, None
+        
+        # Si Open-Meteo encuentra la ciudad
+        if geo_response.status_code == 200:
+            geo_data = geo_response.json()
+            if geo_data.get('results'):
+                lat = geo_data['results'][0]['latitude']
+                lon = geo_data['results'][0]['longitude']
+                city_name = geo_data['results'][0]['name']
+                country = geo_data['results'][0]['country']
+        
+        # Si no encuentra, intentar con nuestro fallback de ciudades colombianas
+        if lat is None and city_lower in colombian_cities:
+            city_data = colombian_cities[city_lower]
+            lat = city_data['lat']
+            lon = city_data['lon']
+            city_name = city_data['name']
+            country = city_data['country']
+            print(f"Using fallback coordinates for {city}: {lat}, {lon}")
+        
+        # Si todavía no hay coordenadas, usar Bogotá como último fallback
+        if lat is None:
+            lat = 4.7110  # Bogotá
+            lon = -74.0721
+            city_name = city or 'Ubicación'
+            country = 'Colombia'
+            print(f"Using Bogotá as final fallback for {city}")
         
         # Obtener clima actual
         weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto"

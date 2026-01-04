@@ -1,84 +1,64 @@
-/* Weather Widget Styles */
+/* WeatherWidget.css - Enhanced Design */
 .weather-widget {
   border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.weather-widget:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.weather-image-container {
+  position: relative;
+  height: 250px;
+  overflow: hidden;
+  border-radius: 20px 20px 0 0;
+}
+
+.weather-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: brightness(0.9) contrast(1.1);
+}
+
+.weather-widget:hover .weather-image {
+  transform: scale(1.08);
+  filter: brightness(1) contrast(1.2);
+}
+
+.weather-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  display: flex;
+  align-items: flex-end;
+  padding: 25px;
   color: white;
+  backdrop-filter: blur(2px);
 }
 
-.weather-widget .card-body {
-  padding: 1.5rem;
+.weather-icon-large {
+  font-size: 4rem;
+  margin-bottom: 8px;
+  filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.4));
+  animation: float 3s ease-in-out infinite;
 }
 
-.weather-widget .weather-icon {
-  font-size: 2.5rem;
-  line-height: 1;
-  margin-bottom: 0.5rem;
-}
-
-.weather-widget .weather-stat {
-  padding: 1rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.weather-widget .weather-stat:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-.weather-widget .weather-stat h4 {
-  font-weight: 700;
-  font-size: 1.5rem;
-  margin: 0.5rem 0 0 0;
-}
-
-.weather-widget .weather-stat small {
-  font-size: 0.875rem;
-  opacity: 0.8;
-}
-
-/* Location Picker Styles */
-.location-picker .suggestions {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1050;
-}
-
-.location-picker .suggestions div {
-  transition: background-color 0.2s ease;
-  border-bottom: 1px solid #f8f9fa;
-}
-
-.location-picker .suggestions div:hover {
-  background-color: #e9ecef;
-}
-
-.location-picker .suggestions div:last-child {
-  border-bottom: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .weather-widget .weather-stat {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .weather-widget .weather-stat h4 {
-    font-size: 1.25rem;
-  }
-
-  .weather-widget .weather-icon {
-    font-size: 2rem;
-  }
-}
-
-/* Animation for weather icons */
 @keyframes float {
   0%,
   100% {
@@ -89,15 +69,323 @@
   }
 }
 
-.weather-widget .weather-icon {
-  animation: float 3s ease-in-out infinite;
+.weather-stat {
+  padding: 20px 15px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f3f5 100%);
+  margin: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 123, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-/* Loading states */
+.weather-stat:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 123, 255, 0.15);
+  border-color: rgba(0, 123, 255, 0.3);
+}
+
+.weather-stat h5 {
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 4px 8px;
+  border-radius: 8px;
+  text-shadow: none;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.weather-stat small {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #2c3e50;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-shadow: none;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced compact version for field cards */
+.weather-compact {
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+}
+
+.weather-compact:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.weather-compact-image {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+}
+
+.weather-compact-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: brightness(0.85) contrast(1.15);
+}
+
+.weather-compact:hover .weather-compact-image img {
+  transform: scale(1.1);
+  filter: brightness(1) contrast(1.2);
+}
+
+.weather-compact-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  color: white;
+  backdrop-filter: blur(3px);
+}
+
+.weather-compact-overlay h6 {
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 4px;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.weather-compact-overlay small {
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  font-size: 1.1rem;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced field card styles */
+.field-card {
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-radius: 20px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.field-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+.field-weather-image {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px 20px 0 0;
+}
+
+.field-details {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.detail-item {
+  margin-bottom: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item strong {
+  color: #2c3e50;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Enhanced responsive adjustments */
+@media (max-width: 768px) {
+  .weather-image-container {
+    height: 200px;
+  }
+
+  .weather-overlay {
+    padding: 20px;
+  }
+
+  .weather-icon-large {
+    font-size: 3rem;
+  }
+
+  .weather-stat {
+    padding: 15px 10px;
+    margin: 5px;
+  }
+
+  .weather-stat h5 {
+    font-size: 1.1rem;
+  }
+
+  .weather-stat small {
+    font-size: 0.75rem;
+  }
+
+  .weather-compact-image {
+    height: 120px;
+  }
+
+  .weather-compact-overlay {
+    padding: 15px;
+  }
+
+  .weather-compact-overlay small {
+    font-size: 1rem;
+  }
+}
+
+/* Enhanced loading and error states */
 .weather-widget .spinner-border {
-  border-color: rgba(255, 255, 255, 0.3);
+  color: #007bff;
+  width: 3rem;
+  height: 3rem;
+  border-width: 4px;
+}
+
+.weather-widget .alert {
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced badge styling */
+.weather-widget .badge {
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 25px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced animation for weather data */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.weather-widget .weather-stat {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.weather-widget .weather-stat:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.weather-widget .weather-stat:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.weather-widget .weather-stat:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.weather-widget .weather-stat:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Enhanced dark mode support */
+@media (prefers-color-scheme: dark) {
+  .weather-widget {
+    background: linear-gradient(135deg, #2c3e50 0%, #343a40 100%);
+  }
+
+  .weather-stat {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+    border-color: rgba(0, 123, 255, 0.3);
+  }
+
+  .weather-stat h5 {
+    color: #f8f9fa;
+    background: linear-gradient(135deg, #2c3e50 0%, #343a40 100%);
+  }
+
+  .weather-stat small {
+    color: #e9ecef;
+    background: linear-gradient(135deg, #2c3e50 0%, #343a40 100%);
+  }
+
+  .detail-item strong {
+    color: #f8f9fa;
+  }
+
+  .weather-compact {
+    background: #2c3e50;
+  }
+}
+
+/* Enhanced loading states */
+.weather-widget .spinner-border {
+  border-color: rgba(0, 123, 255, 0.3);
+  border-top-color: #007bff;
 }
 
 .weather-widget .text-muted {
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Enhanced location picker styles */
+.location-picker .suggestions {
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+  backdrop-filter: blur(10px);
+}
+
+.location-picker .suggestions div {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid #f8f9fa;
+  padding: 12px 16px;
+}
+
+.location-picker .suggestions div:hover {
+  background-color: #e9ecef;
+  transform: translateX(4px);
+}
+
+.location-picker .suggestions div:last-child {
+  border-bottom: none;
 }
